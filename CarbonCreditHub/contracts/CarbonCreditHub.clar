@@ -283,6 +283,36 @@
   )
 )
 
+;; Advanced batch processing function for multiple credit operations
+(define-public (batch-process-credit-operations 
+  (operations (list 10 { operation-type: uint, project-id: uint, amount: uint, target: (optional principal) })))
+  (let (
+    (processed-operations (map process-single-operation operations))
+    (success-count (len (filter is-operation-successful processed-operations)))
+    (total-operations (len operations))
+  )
+    (if (> success-count u0)
+      (begin
+        ;; Log batch operation success metrics
+        (print { 
+          event: "batch-operation-completed",
+          total-operations: total-operations,
+          successful-operations: success-count,
+          success-rate: (/ (* success-count u100) total-operations),
+          block-height: block-height,
+          processor: tx-sender
+        })
+        (ok { 
+          processed: total-operations, 
+          successful: success-count,
+          failed: (- total-operations success-count)
+        })
+      )
+      (err u999) ;; All operations failed
+    )
+  )
+)
+
 ;; Helper function for batch processing individual operations
 (define-private (process-single-operation 
   (operation { operation-type: uint, project-id: uint, amount: uint, target: (optional principal) }))
